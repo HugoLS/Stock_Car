@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO Car Drive</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- /*<script src="js/car.js"></script> -->
+    <style>
+    #canvas {
+            border: 2px solid #333;
+    }
+    </style>
+  </head>
+
+  <body>
+   
+	<canvas id="canvas" width="500" height="500"></canvas>
+
+    <script>
+      var socket = io.connect('http://192.168.1.76:3000/');
+      
+      socket.emit('newGame', '');
+      socket.on('newGame', function(msg){
+        //$('body').css("background-color", msg);
+      });
+
+    </script>
+  </body>
+</html>
