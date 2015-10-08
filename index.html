@@ -16,15 +16,41 @@
   <body>
    
 	<canvas id="canvas" width="500" height="500"></canvas>
-
+  <button id="button">OK</button>
     <script>
       var socket = io.connect('http://192.168.1.76:3000/');
-      
-      socket.emit('newGame', '');
-      socket.on('newGame', function(msg){
-        //$('body').css("background-color", msg);
+      var gp;
+
+      window.addEventListener("gamepadconnected", function(e) {
+        gp = navigator.getGamepads()[0];
+        console.log("Contrôleur n°%d connecté : %s. %d boutons, %d axes.",
+        gp.index, gp.id,
+        gp.buttons.length, gp.axes.length);
       });
 
+      if (buttonPressed(gp.buttons[0]))
+      {
+        console.log("appui 1");
+        //$('body').css("background-color", "orange");
+      }
+      socket.emit('newGame', '');
+      socket.on('newGame', function(msg){
+        $('body').css("background-color", msg);
+      });
+      $("#button").click(function(){
+        socket.emit('changeColor', '');
+      });
+      socket.on('changeColor', function(msg){
+        $('body').css("background-color", msg);
+      });
+
+      function buttonPressed(b) {
+        if (typeof(b) == "object") {
+          return b.pressed;
+        }
+        return b == 1.0;
+      }
+      
     </script>
   </body>
 </html>

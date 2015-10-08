@@ -1,5 +1,6 @@
 var car = function(){
-	this.color = "blue";
+	this.id = "";
+	this.color = "";
 };
 
 module.exports = car;

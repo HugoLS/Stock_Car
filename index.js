@@ -3,8 +3,6 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var car = require('./car.js');
 
-var carInstance = new car();
-
 var connectedPlayers = 0;
 var cars = {};
 //console.log(carInstance.color);
@@ -24,12 +22,20 @@ app.get('/', function(req, res){
 
 io.on('connection', function(socket){
   connectedPlayers++;
-  cars[socket.id] = "test";
-  //console.log(cars[socket.id]);
+  var carInstance = new car();
+  carInstance.id = socket.id;
+  cars[carInstance.id] = carInstance;
+  carInstance.color = getRandomColor();
+
+  //console.log(carInstance.color);
 
   socket.on('newGame', function(msg){
-    socket.emit('newGame', getRandomColor());
+    socket.emit('newGame', carInstance.color);
   });
+
+  socket.on('changeColor', function(msg){
+    socket.emit('changeColor', "red");
+  });  
   
   socket.on('disconnect', function(){
     connectedPlayers--;
