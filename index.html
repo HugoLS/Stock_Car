@@ -5,52 +5,150 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <!-- /*<script src="js/car.js"></script> -->
+
     <style>
     #canvas {
             border: 2px solid #333;
     }
     </style>
   </head>
-
+ 
   <body>
-   
+
+  <button id="restart" type="button" name="button">Restart</button>
 	<canvas id="canvas" width="500" height="500"></canvas>
-  <button id="button">OK</button>
+
     <script>
       var socket = io.connect('http://192.168.1.76:3000/');
+      var canvas = document.getElementById("canvas");
+      var context = canvas.getContext("2d");
+      var gameloop;
       var gp;
+      var cars = {};
+      var controls = {"up": 0, "left": 0, "right": 0, "down": 0};
 
+      window.addEventListener("keydown", keypress_handler, false);
+      window.addEventListener("keyup", keyup_handler, false);
       window.addEventListener("gamepadconnected", function(e) {
-        gp = navigator.getGamepads()[0];
-        console.log("Contrôleur n°%d connecté : %s. %d boutons, %d axes.",
-        gp.index, gp.id,
-        gp.buttons.length, gp.axes.length);
-      });
+    	  gp = navigator.getGamepads()[e.gamepad.index];
+    	  console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+    	  gp.index, gp.id,
+    	  gp.buttons.length, gp.axes.length);
 
-      if (buttonPressed(gp.buttons[0]))
-      {
-        console.log("appui 1");
-        //$('body').css("background-color", "orange");
-      }
-      socket.emit('newGame', '');
+        socket.emit('launchGame', '');
+    	});
+
       socket.on('newGame', function(msg){
-        $('body').css("background-color", msg);
-      });
-      $("#button").click(function(){
-        socket.emit('changeColor', '');
-      });
-      socket.on('changeColor', function(msg){
-        $('body').css("background-color", msg);
+        var car = JSON.parse(msg);
+
+        socket.on('update', function(msg){
+          cars = JSON.parse(msg);
+        });
+
+        gameloop = setInterval(function () {
+            updateControls();
+            draw();
+        }, 20);
+
+        socket.on('gameOver', function(msg){
+          gameOver();
+        });
       });
 
-      function buttonPressed(b) {
-        if (typeof(b) == "object") {
-          return b.pressed;
+      function updateControls(){
+        var gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads : []);
+    		  if (!gamepads)
+    		    return;
+
+    		var gp = gamepads[0];
+        if (gp.axes[0]==-1) {
+    		    controls["left"] = 1;
+    		} else if (gp.axes[0]==1) {
+    		    controls["right"] = 1;
+    		}else{
+          controls["right"] = 0;
+          controls["left"] = 0;
         }
-        return b == 1.0;
+        socket.emit('updateControls', JSON.stringify(controls));
       }
-      
+
+/* ****************************************************************************** */
+/* ******************************* DRAW LOOP ************************************ */
+/* ****************************************************************************** */
+
+    function draw() {
+      context = canvas.getContext("2d");
+      context.clearRect(0, 0, 500, 500);
+
+      for (var idCar in cars){
+          var carcolor = cars[idCar].color;
+          var x = cars[idCar].x;
+          var y = cars[idCar].y;
+          //console.log("position :" + x + " | " + y);
+          var vx = cars[idCar].vx;
+          var vy = cars[idCar].vy;
+          var width = cars[idCar].width;
+          var height = cars[idCar].height;
+          var angle = cars[idCar].angle;
+
+          context.fillStyle = carcolor;
+
+          context.save();
+          context.translate(x, y);
+          context.rotate(angle + Math.PI/2);
+          context.fillRect(-(width / 2), -(height / 2),width,height);
+          context.restore();
+      }
+    }
+
+/* ****************************************************************************** */
+/* ******************************* GAME LOGIC *********************************** */
+/* ****************************************************************************** */
+
+    $("#restart").click(function(){
+        restart();
+    });
+
+    function gameOver(){
+      clearInterval(gameloop);
+    }
+    function restart(){
+      socket.emit('launchGame', '');
+    }
+
+/* ****************************************************************************** */
+/* ******************************* CONTROLS ************************************* */
+/* ****************************************************************************** */
+
+    function keyup_handler(event) {
+        if (event.keyCode == 90) {
+          controls["up"] = 0;
+        }
+        if (event.keyCode == 83) {
+          controls["down"] = 0;
+        }
+        if (event.keyCode == 81) {
+          controls["left"] = 0;
+        }
+        if (event.keyCode == 68) {
+          controls["right"] = 0;
+        }
+    }
+
+    function keypress_handler(event) {
+        if (event.keyCode == 90) {
+          controls["up"] = 1;
+        }
+        if (event.keyCode == 83) {
+          controls["down"] = 1;
+        }
+        if (event.keyCode == 81) {
+          controls["left"] = 1;
+        }
+        if (event.keyCode == 68) {
+          controls["right"] = 1;
+        }
+    }
     </script>
   </body>
 </html>
